@@ -47,8 +47,8 @@ spring:
           google:
             # ATENÇÃO: Estes valores devem ser obtidos no seu Google Cloud Console.
             # É uma boa prática configurá-los via variáveis de ambiente em produção.
-            client-id: 980679245935-ds7s7oi74lgsmjtp4hpb1jj5umgo6il3.apps.googleusercontent.com
-            client-secret: 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
+            #client-id: 980679245935-ds7s7oi74lgsmjtp4hpb1jj5umgo6il3.apps.googleusercontent.com
+            #client-secret: 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
             # 'scope' em formato de lista YAML, que é mais limpo.
             scope:
               - openid
