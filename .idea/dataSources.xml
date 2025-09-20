@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="battlepassdb" uuid="7160b01f-b04e-4bbe-b052-9829751c4198">
+    <data-source source="LOCAL" name="Docker" uuid="2bda8b8f-1b97-411f-b985-ba8bd8e761ce">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>

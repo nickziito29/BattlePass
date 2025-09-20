@@ -11,5 +11,5 @@ public interface AthleteProfileRepository extends JpaRepository<AthleteProfile, 
     // JpaRepository<TipoDaEntidade, TipoDoIdDaEntidade>
 
     // Um método útil para o futuro: encontrar um perfil de atleta pelo ID do usuário
-    Optional<AthleteProfile> findByUser_Id(String userId);
+    Optional<AthleteProfile> findByUser_Id(UUID userId);
 }

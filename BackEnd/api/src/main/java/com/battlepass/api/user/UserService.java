@@ -1,20 +1,30 @@
 package com.battlepass.api.user;
 
+import com.battlepass.api.config.EmailService;
 import com.battlepass.api.exception.EmailAlreadyExistsException;
+import com.battlepass.api.security.VerificationToken;
+import com.battlepass.api.security.VerificationTokenRepository;
 import org.springframework.security.core.userdetails.UsernameNotFoundException; // <-- 1. IMPORTAR
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final VerificationTokenRepository tokenRepository;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       VerificationTokenRepository tokenRepository, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tokenRepository = tokenRepository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -24,7 +34,30 @@ public class UserService {
         });
 
         User newUser = mapDtoToEntity(registrationData);
-        return userRepository.save(newUser);
+        User savedUser = userRepository.save(newUser);
+        String tokenValue = UUID.randomUUID().toString();
+        VerificationToken verificationToken = new VerificationToken(tokenValue, savedUser);
+        tokenRepository.save(verificationToken);
+
+        emailService.sendVerificationEmail(savedUser.getEmail(), tokenValue);
+
+        return savedUser;
+    }
+
+    @Transactional
+    public void verifyUser(String token) {
+        VerificationToken verificationToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalStateException("Token de verificação inválido."));
+
+        if (verificationToken.isExpired()) {
+            throw new IllegalStateException("Token de verificação expirado.");
+        }
+
+        User user = verificationToken.getUser();
+        user.setStatus(AccountStatus.ACTIVE); // Ativa o usuário
+        userRepository.save(user);
+
+        tokenRepository.delete(verificationToken); // Opcional: limpa o token após o uso
     }
 
     private User mapDtoToEntity(UserRegistrationDTO dto) {
@@ -45,7 +78,6 @@ public class UserService {
         return user;
     }
 
-    // --- 2. NOVO MÉTODO PARA ATUALIZAR O PERFIL ---
     @Transactional
     public User updateUserProfile(String email, ProfileUpdateDTO profileData) {
         // Busca o usuário no banco de dados. Se não encontrar, lança uma exceção.
