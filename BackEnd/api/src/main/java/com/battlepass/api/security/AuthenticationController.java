@@ -3,14 +3,17 @@ package com.battlepass.api.security;
 import com.battlepass.api.user.User;
 import com.battlepass.api.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+// A anotação @CrossOrigin é opcional aqui se você já configurou o CORS globalmente no WebConfig
 public class AuthenticationController {
 
     @Autowired
@@ -23,10 +26,7 @@ public class AuthenticationController {
     private TokenService tokenService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDTO loginRequest) {
-        // LINHA DE DEBUG:
-        System.out.println(">>> DENTRO DO MÉTODO DE LOGIN <<<");
-
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest) {
         var usernamePassword = new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password());
         var auth = this.authenticationManager.authenticate(usernamePassword);
 
@@ -36,17 +36,24 @@ public class AuthenticationController {
         return ResponseEntity.ok(new LoginResponseDTO(token));
     }
 
+    /**
+     * Endpoint que recebe o token de verificação enviado por e-mail.
+     * Se o token for válido, ativa o usuário e redireciona para uma página de sucesso no front-end.
+     */
     @GetMapping("/verify")
-    public ResponseEntity<String> verifyAccount(@RequestParam("token") String token) {
+    public ResponseEntity<Void> verifyAccount(@RequestParam("token") String token) {
         try {
             userService.verifyUser(token);
-            // Idealmente, redirecionar para uma página de sucesso no front-end
-            // return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("http://localhost:5173/verification-success")).build();
-            return ResponseEntity.ok("Conta verificada com sucesso! Você já pode fazer o login.");
+            // SUCESSO: Retorna um status 302 (Found) que instrui o navegador a redirecionar
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("http://localhost:5173/verification-success"))
+                    .build();
         } catch (IllegalStateException e) {
-            // Idealmente, redirecionar para uma página de erro no front-end
-            // return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("http://localhost:5173/verification-error?message=" + e.getMessage())).build();
-            return ResponseEntity.badRequest().body(e.getMessage());
+            // FALHA: Redireciona para uma futura página de erro no front-end (opcional)
+            // Por enquanto, apenas retorna um erro 400.
+            // No futuro, você poderia usar:
+            // return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("http://localhost:5173/verification-error")).build();
+            return ResponseEntity.badRequest().build();
         }
     }
 }

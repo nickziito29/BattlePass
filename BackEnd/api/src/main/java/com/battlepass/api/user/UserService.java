@@ -95,4 +95,9 @@ public class UserService {
         return userRepository.save(userToUpdate);
     }
     // ---------------------------------------------
+    @Transactional
+    public void completeOnboarding(User user) {
+        user.setIsNewUser(false);
+        userRepository.save(user);
+    }
 }

@@ -1,5 +1,4 @@
-﻿-- Cria a tabela central de usuários
-CREATE TABLE users (
+﻿CREATE TABLE users (
                        id UUID PRIMARY KEY,
                        first_name VARCHAR(255) NOT NULL,
                        last_name VARCHAR(255) NOT NULL,
@@ -15,10 +14,10 @@ CREATE TABLE users (
                        hometown VARCHAR(255),
                        current_city VARCHAR(255),
                        status VARCHAR(50) NOT NULL,
-                       created_at TIMESTAMP NOT NULL
+                       created_at TIMESTAMP NOT NULL,
+                       is_new_user BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Cria a tabela de modalidades de luta
 CREATE TABLE modalities (
                             id SERIAL PRIMARY KEY,
                             name VARCHAR(255) NOT NULL UNIQUE,

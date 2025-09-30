@@ -1,0 +1,102 @@
+.profile-edit-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.profile-edit-form {
+    background-color: var(--card-bg);
+    padding: 24px 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.profile-edit-form h2 {
+    text-align: center;
+    color: var(--primary-red);
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group select {
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+/* Estilização específica para o select de múltiplas opções */
+.form-group select[multiple] {
+    height: 150px; /* Altura fixa para a caixa */
+    overflow-y: auto; /* Adiciona barra de rolagem se necessário */
+}
+
+.form-group select[multiple] option {
+    padding: 8px;
+}
+
+.profile-edit-form button {
+    background-color: var(--primary-red);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.profile-edit-form button:disabled {
+    background-color: #7a0c0c;
+    cursor: not-allowed;
+}
+
+.form-error {
+    color: #fa383e;
+    text-align: center;
+}
+
+.form-success {
+    color: #4CAF50;
+    text-align: center;
+}
+
+.loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-size: 1.5rem;
+}

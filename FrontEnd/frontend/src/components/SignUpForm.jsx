@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext.jsx'; // <-- 1. IMPORTAR O useAuth
 
 function SignUpForm({ onSwitchToLogin }) {
+    const { loginAction } = useAuth(); // <-- 2. PEGAR A FUNÇÃO DE LOGIN DO CONTEXTO
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -10,7 +13,6 @@ function SignUpForm({ onSwitchToLogin }) {
         password: '',
         birthDate: '',
         gender: '',
-        // --- CAMPOS ADICIONADOS AO ESTADO ---
         pronoun: '', 
         customGender: ''
     });
@@ -25,7 +27,6 @@ function SignUpForm({ onSwitchToLogin }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // --- VALIDAÇÃO ATUALIZADA ---
         if (!formData.gender) {
             setError('Por favor, selecione um gênero.');
             return;
@@ -38,7 +39,6 @@ function SignUpForm({ onSwitchToLogin }) {
         setLoading(true);
         setError('');
 
-        // --- LÓGICA DE ENVIO ATUALIZADA ---
         const dataToSend = {
             firstName: formData.firstName,
             lastName: formData.lastName,
@@ -46,18 +46,42 @@ function SignUpForm({ onSwitchToLogin }) {
             email: formData.email,
             password: formData.password,
             birthDate: formData.birthDate,
-            gender: formData.gender.toUpperCase(),
-            // Envia os campos extras apenas se o gênero for 'CUSTOM'
+            gender: formData.gender, // O backend aceita o enum, não precisa de toUpperCase()
             pronoun: formData.gender === 'CUSTOM' ? formData.pronoun : null,
             customGender: formData.gender === 'CUSTOM' ? formData.customGender : null,
         };
 
         try {
+            // ==============================================================================
+            // 3. LÓGICA DE LOGIN AUTOMÁTICO
+            // ==============================================================================
+
+            // Primeiro, tenta registrar o usuário
             await axios.post('http://localhost:8080/api/users', dataToSend);
-            alert('Cadastro realizado com sucesso! Por favor, faça o login.');
-            onSwitchToLogin(e);
+
+            // Se o registro foi bem-sucedido, tenta fazer o login imediatamente
+            const loginResponse = await axios.post('http://localhost:8080/api/auth/login', {
+                email: formData.email,
+                password: formData.password
+            });
+
+            // Se o login retornou um token, chama a loginAction do contexto
+            if (loginResponse.data.token) {
+                loginAction(loginResponse.data.token);
+                // O AppRouter agora cuidará do redirecionamento para a página de onboarding,
+                // pois o usuário será detectado como 'novo'.
+            } else {
+                // Caso raro em que o login falha após um registro bem-sucedido
+                setError('Cadastro realizado, mas o login automático falhou. Por favor, tente logar manualmente.');
+                if (onSwitchToLogin) onSwitchToLogin(e); // Volta para a tela de login
+            }
+            
         } catch (err) {
-            setError('Erro ao realizar o cadastro. Verifique se o email já foi utilizado.');
+            if (err.response && err.response.status === 409) {
+                setError('Este e-mail já está em uso. Por favor, tente outro.');
+            } else {
+                setError('Erro ao realizar o cadastro. Tente novamente.');
+            }
             console.error('Erro no cadastro:', err);
         } finally {
             setLoading(false);
@@ -66,19 +90,20 @@ function SignUpForm({ onSwitchToLogin }) {
 
     return (
         <form onSubmit={handleSubmit} noValidate>
+            {/* O RESTANTE DO SEU CÓDIGO JSX CONTINUA IGUAL E ESTÁ PERFEITO */}
             <div className="form-header">
                 <h2>Criar uma nova conta</h2>
                 <p>É rápido e fácil.</p>
             </div>
             
             <div className="form-row">
-                <input type="text" name="firstName" placeholder="Nome" onChange={handleChange} required />
-                <input type="text" name="lastName" placeholder="Sobrenome" onChange={handleChange} required />
+                <input type="text" name="firstName" placeholder="Nome" value={formData.firstName} onChange={handleChange} required />
+                <input type="text" name="lastName" placeholder="Sobrenome" value={formData.lastName} onChange={handleChange} required />
             </div>
             
-            <input type="text" name="nickname" placeholder="Apelido (opcional)" onChange={handleChange} />
-            <input type="email" name="email" placeholder="Email" onChange={handleChange} required />
-            <input type="password" name="password" placeholder="Nova senha" onChange={handleChange} required />
+            <input type="text" name="nickname" placeholder="Apelido (opcional)" value={formData.nickname} onChange={handleChange} />
+            <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
+            <input type="password" name="password" placeholder="Nova senha" value={formData.password} onChange={handleChange} required />
             
             <div>
                 <div className="form-row-labels">
@@ -86,7 +111,7 @@ function SignUpForm({ onSwitchToLogin }) {
                     <label htmlFor="gender">Gênero</label>
                 </div>
                 <div className="form-row">
-                    <input id="birthDate" type="date" name="birthDate" onChange={handleChange} required />
+                    <input id="birthDate" type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} required />
                     <select id="gender" name="gender" value={formData.gender} onChange={handleChange} required>
                         <option value="" disabled>Selecione...</option>
                         <option value="FEMALE">Feminino</option>
@@ -96,7 +121,6 @@ function SignUpForm({ onSwitchToLogin }) {
                 </div>
             </div>
 
-            {/* --- BLOCO DE RENDERIZAÇÃO CONDICIONAL ADICIONADO --- */}
             {formData.gender === 'CUSTOM' && (
                 <div className="custom-gender-fields">
                     <select name="pronoun" value={formData.pronoun} onChange={handleChange} required>
@@ -115,10 +139,9 @@ function SignUpForm({ onSwitchToLogin }) {
                     />
                 </div>
             )}
-            {/* -------------------------------------------------- */}
 
             <button type="submit" className="signup-button-main" disabled={loading}>
-                {loading ? 'Cadastrando...' : 'Cadastre-se'}
+                {loading ? 'Criando conta...' : 'Cadastre-se'}
             </button>
 
             {error && <p className="error-message">{error}</p>}

@@ -1,45 +1,54 @@
 package com.battlepass.api.user;
 
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor; // Usando Lombok para injeção
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:5173")
+@RequiredArgsConstructor // Injeta dependências via construtor
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService; // Injetado via @RequiredArgsConstructor
 
     // Endpoint público para registrar um novo usuário
     @PostMapping
-    public ResponseEntity<User> registerUser(@Valid @RequestBody UserRegistrationDTO registrationData) {
+    public ResponseEntity<UserPublicDTO> registerUser(@Valid @RequestBody UserRegistrationDTO registrationData) {
         User newUser = userService.registerNewUser(registrationData);
-        // Retorna 201 Created com o usuário criado
-        return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
+        // Retorna 201 Created com o DTO público do usuário, NUNCA a entidade completa
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapEntityToDto(newUser));
     }
 
     // Endpoint protegido para que um usuário atualize seu próprio perfil
     @PutMapping("/profile")
-    public ResponseEntity<User> updateUserProfile(
-            Authentication authentication, // Objeto injetado pelo Spring Security
+    public ResponseEntity<UserPublicDTO> updateUserProfile(
+            @AuthenticationPrincipal User user, // Injeta o usuário logado diretamente
             @Valid @RequestBody ProfileUpdateDTO profileData)
     {
-        // MELHORIA DE SEGURANÇA: Obtém o email do usuário logado diretamente do contexto de segurança.
-        String userEmail = authentication.getName();
-
-        User updatedUser = userService.updateUserProfile(userEmail, profileData);
-        return ResponseEntity.ok(updatedUser);
+        User updatedUser = userService.updateUserProfile(user.getEmail(), profileData);
+        return ResponseEntity.ok(mapEntityToDto(updatedUser));
     }
-    @GetMapping("/me")
-    public ResponseEntity<UserPublicDTO> getCurrentUser(Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
 
-        UserPublicDTO dto = new UserPublicDTO(
+    // Endpoint para buscar os dados do usuário logado
+    @GetMapping("/me")
+    public ResponseEntity<UserPublicDTO> getCurrentUser(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(mapEntityToDto(user));
+    }
+
+    // Endpoint para marcar o onboarding como completo
+    @PutMapping("/me/complete-onboarding")
+    public ResponseEntity<Void> completeOnboarding(@AuthenticationPrincipal User user) {
+        userService.completeOnboarding(user);
+        return ResponseEntity.ok().build();
+    }
+
+    // Método helper privado para mapear a Entidade User para o DTO público
+    private UserPublicDTO mapEntityToDto(User user) {
+        return new UserPublicDTO(
                 user.getId(),
                 user.getFirstName(),
                 user.getLastName(),
@@ -53,10 +62,9 @@ public class UserController {
                 user.getCustomGender(),
                 user.getHometown(),
                 user.getCurrentCity(),
-                user.getStatus(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getIsNewUser(),
+                user.getStatus() // <-- CAMPO ADICIONADO AQUI
         );
-
-        return ResponseEntity.ok(dto);
     }
 }

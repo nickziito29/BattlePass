@@ -1,50 +1,54 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
-// Valor inicial do contexto
-const AuthContext = createContext({
-  token: null,
-  user: null,
-  loginAction: () => {},
-  logOut: () => {},
-});
+const AuthContext = createContext(null);
 
-// Provider que gerencia autenticação
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Sempre que o token mudar, configura Axios e busca o usuário
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  const logOut = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
+  }, []);
 
-      axios.get('http://localhost:8080/api/users/me')
-        .then(res => {
-          setUser(res.data);
-        })
-        .catch(err => {
-          console.error('Erro ao buscar usuário logado:', err);
-          logOut();
-        });
+  const fetchUser = useCallback(async (currentToken) => {
+    if (currentToken) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`;
+      try {
+        const res = await axios.get('http://localhost:8080/api/users/me');
+        setUser(res.data);
+      } catch (err) {
+        console.error('Erro ao buscar usuário (token pode ser inválido):', err);
+        logOut();
+      }
     } else {
-      delete axios.defaults.headers.common['Authorization'];
       setUser(null);
     }
-  }, [token]);
+    setLoading(false);
+  }, [logOut]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchUser(token);
+  }, [token, fetchUser]);
 
   const loginAction = (newToken) => {
     setToken(newToken);
     localStorage.setItem('token', newToken);
   };
 
-  const logOut = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
+  const refreshUser = async () => {
+    if (token) {
+      setLoading(true);
+      await fetchUser(token);
+    }
   };
 
-  const value = { token, user, loginAction, logOut };
+  const value = { token, user, loading, loginAction, logOut, refreshUser };
 
   return (
     <AuthContext.Provider value={value}>
@@ -53,7 +57,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Hook customizado para usar o contexto
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   return useContext(AuthContext);
 };

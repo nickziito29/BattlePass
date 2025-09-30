@@ -8,45 +8,31 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    private final UserRepository userRepository;
-
     @Autowired
-    public CustomOAuth2UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private UserRepository userRepository;
 
     @Override
-    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        // 1. Pega os dados brutos do Google
         OAuth2User oAuth2User = super.loadUser(userRequest);
-
-        // 2. Extrai os atributos essenciais
         String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
-        String profilePictureUrl = oAuth2User.getAttribute("picture");
 
-        // 3. Garante que o usuário exista no nosso banco de dados.
-        //    Se não existir, o método createNewUserFromOAuth irá criá-lo.
-        userRepository.findByEmail(email).orElseGet(() ->
-                createNewUserFromOAuth(email, name, profilePictureUrl)
-        );
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User newUser = createNewUserFromOAuth(oAuth2User);
+            return userRepository.save(newUser);
+        });
 
-        // 4. RETORNA O OBJETO OAUTH2 PADRÃO.
-        //    A transação garante que o usuário já foi salvo no banco antes
-        //    do SuccessHandler ser chamado.
-        return oAuth2User;
+        user.setAttributes(oAuth2User.getAttributes());
+        return user;
     }
 
-    private User createNewUserFromOAuth(String email, String name, String profilePictureUrl) {
+    private User createNewUserFromOAuth(OAuth2User oAuth2User) {
         User newUser = new User();
-        newUser.setEmail(email);
-
+        newUser.setEmail(oAuth2User.getAttribute("email"));
+        String name = oAuth2User.getAttribute("name");
         if (name != null && !name.isEmpty()) {
             String[] names = name.split(" ", 2);
             newUser.setFirstName(names[0]);
@@ -55,10 +41,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             newUser.setFirstName("Usuário");
             newUser.setLastName("BattlePass");
         }
-
-        newUser.setProfilePictureUrl(profilePictureUrl);
+        newUser.setProfilePictureUrl(oAuth2User.getAttribute("picture"));
         newUser.setPassword("oauth2_placeholder_password_" + System.currentTimeMillis());
-
-        return userRepository.save(newUser);
+        return newUser;
     }
 }

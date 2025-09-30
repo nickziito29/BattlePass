@@ -18,7 +18,7 @@ spring:
   jpa:
     hibernate:
       # Em desenvolvimento, 'update' é conveniente. Em produção, use 'validate' ou 'none'.
-      ddl-auto: validate
+      ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     # Mostra os comandos SQL gerados no console. Ótimo para debug.
     show-sql: true
@@ -47,8 +47,8 @@ spring:
           google:
             # ATENÇÃO: Estes valores devem ser obtidos no seu Google Cloud Console.
             # É uma boa prática configurá-los via variáveis de ambiente em produção.
-            #client-id: 980679245935-ds7s7oi74lgsmjtp4hpb1jj5umgo6il3.apps.googleusercontent.com
-            #client-secret: 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
+            client-id: 980679245935-ds7s7oi74lgsmjtp4hpb1jj5umgo6il3.apps.googleusercontent.com
+            client-secret: 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
             # 'scope' em formato de lista YAML, que é mais limpo.
             scope:
               - openid
@@ -70,8 +70,10 @@ spring:
     # Substitua com as credenciais do seu provedor de e-mail (Gmail, SendGrid, etc).
     host: smtp.mailtrap.io
     port: 2525
-    username: nbrendo29@gmail.com
-    password: Nick#2906
+    ssl: no
+    tls: yes
+    username: "5a066c2d3f4762"
+    password: "918194698cf6f0"
     properties:
       mail:
         smtp:

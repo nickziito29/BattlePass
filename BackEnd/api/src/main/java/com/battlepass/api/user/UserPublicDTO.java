@@ -17,6 +17,7 @@ public record UserPublicDTO(
         String customGender,
         String hometown,
         String currentCity,
-        AccountStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Boolean isNewUser,
+        AccountStatus status
 ) {}
